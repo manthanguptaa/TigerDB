@@ -51,9 +51,8 @@ func (c *Cache) Set(key, value []byte, ttl time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	ticker := time.NewTicker(ttl)
 	go func() {
-		<-ticker.C
+		<-time.After(ttl)
 		delete(c.data, string(key))
 	}()
 
