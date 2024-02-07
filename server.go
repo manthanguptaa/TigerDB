@@ -2,6 +2,7 @@ package main
 
 import (
 	"TigerDB/cache"
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -10,17 +11,20 @@ import (
 type ServerOpts struct {
 	ListenAddr string
 	IsLeader   bool
+	LeaderAddr string
 }
 
 type Server struct {
 	ServerOpts
-	cache cache.Cacher
+	followers map[net.Conn]struct{}
+	cache     cache.Cacher
 }
 
 func NewServer(opts ServerOpts, c cache.Cacher) *Server {
 	return &Server{
 		ServerOpts: opts,
 		cache:      c,
+		followers:  make(map[net.Conn]struct{}),
 	}
 }
 
@@ -63,17 +67,40 @@ func (s *Server) handleCommand(conn net.Conn, rawCmd []byte) {
 	msg, err := parseMessage(rawCmd)
 	if err != nil {
 		fmt.Println("failed to parse command: ", err)
+		conn.Write([]byte(err.Error()))
 		return
 	}
+
 	switch msg.Cmd {
 	case CMDSet:
-		if err := s.handleSetCmd(conn, msg); err != nil {
-			return
-		}
+		err = s.handleSetCmd(conn, msg)
+	case CMDGet:
+		_, err = s.handleGetCmd(conn, msg)
+	}
+
+	if err != nil {
+		fmt.Println("failed to handle command: ", err)
+		conn.Write([]byte(err.Error()))
 	}
 }
 
+func (s *Server) handleGetCmd(conn net.Conn, msg *Message) ([]byte, error) {
+	value, err := s.cache.Get(msg.Key)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 func (s *Server) handleSetCmd(conn net.Conn, msg *Message) error {
-	fmt.Println("handling the SET command: ", msg)
+	if err := s.cache.Set(msg.Key, msg.Value, msg.TTL); err != nil {
+		return err
+	}
+
+	go s.sendToFollowers(context.TODO(), msg)
+	return nil
+}
+
+func (s *Server) sendToFollowers(ctx context.Context, msg *Message) error {
 	return nil
 }
