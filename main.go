@@ -26,7 +26,6 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		conn.Write([]byte("SET Foo Bar 2600000000"))
 		time.Sleep(time.Second * 2)
 

@@ -46,7 +46,6 @@ func (c *Cache) Get(key []byte) ([]byte, error) {
 	}
 
 	log.Printf("GET %s = %s\n", string(key), val)
-
 	return val, nil
 }
 
@@ -62,6 +61,5 @@ func (c *Cache) Set(key, value []byte, ttl time.Duration) error {
 	c.data[string(key)] = value
 
 	log.Printf("SET %s to %s\n", string(key), value)
-
 	return nil
 }
