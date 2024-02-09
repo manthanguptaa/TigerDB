@@ -6,3 +6,6 @@ run: build
 
 runfollower: build
 	./bin/TigerDB --listenaddr :4000 --leaderaddr :3000
+
+test:
+	@go test -v ./...

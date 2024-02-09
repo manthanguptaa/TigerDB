@@ -2,10 +2,10 @@ package main
 
 import (
 	"TigerDB/cache"
+	"TigerDB/client"
+	"context"
 	"flag"
-	"fmt"
 	"log"
-	"net"
 	"time"
 )
 
@@ -16,25 +16,32 @@ func main() {
 
 	opts := ServerOpts{
 		ListenAddr: *listenAddr,
-		IsLeader:   true,
+		IsLeader:   len(*leaderAddr) == 0,
 		LeaderAddr: *leaderAddr,
 	}
 
 	go func() {
 		time.Sleep(time.Second * 2)
-		conn, err := net.Dial("tcp", ":3000")
+		client, err := client.New(":3000", client.Options{})
 		if err != nil {
 			log.Fatal(err)
 		}
-		conn.Write([]byte("SET Foo Bar 2600000000"))
-		time.Sleep(time.Second * 2)
-
-		conn.Write([]byte("GET Foo"))
-		buf := make([]byte, 1000)
-		n, _ := conn.Read(buf)
-		fmt.Println(string(buf[:n]))
+		for i := 0; i < 5; i++ {
+			SendCommand(client)
+			time.Sleep(time.Millisecond * 200)
+		}
+		client.Close()
+		time.Sleep(time.Millisecond * 200)
 	}()
 
 	server := NewServer(opts, cache.NewCache())
 	server.Start()
+}
+
+func SendCommand(c *client.Client) {
+	_, err := c.Set(context.Background(), []byte("Manthan"), []byte("Gupta"), 0)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
