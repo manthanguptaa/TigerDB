@@ -14,7 +14,7 @@
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/your-username/TigerDB
+   git clone https://github.com/manthanguptaa/TigerDB
    ```
 
 **Usage:**
