@@ -11,6 +11,8 @@ import (
 	"log"
 	"net"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type ServerOpts struct {
@@ -23,13 +25,17 @@ type Server struct {
 	ServerOpts
 	members map[*client.Client]struct{}
 	cache   cache.Cacher
+	logger  *zap.SugaredLogger
 }
 
 func NewServer(opts ServerOpts, c cache.Cacher) *Server {
+	l, _ := zap.NewProduction()
+	lsugar := l.Sugar()
 	return &Server{
 		ServerOpts: opts,
 		cache:      c,
 		members:    make(map[*client.Client]struct{}),
+		logger:     lsugar,
 	}
 }
 
@@ -47,7 +53,7 @@ func (s *Server) Start() error {
 		}()
 	}
 
-	log.Printf("server starting on port [%s]\n", s.ListenAddr)
+	s.logger.Infow("server starting", "addr", s.ListenAddr, "leader", s.IsLeader)
 
 	for {
 		conn, err := ln.Accept()
@@ -65,7 +71,7 @@ func (s *Server) dialLeader() error {
 		return fmt.Errorf("faild to dial the leader: [%s]", s.LeaderAddr)
 	}
 
-	log.Println("connected to leader: ", s.LeaderAddr)
+	s.logger.Infow("connected to leader", "addr", s.LeaderAddr)
 
 	binary.Write(conn, binary.LittleEndian, proto.CmdJoin)
 
