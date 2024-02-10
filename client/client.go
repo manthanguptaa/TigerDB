@@ -13,6 +13,12 @@ type Client struct {
 	conn net.Conn
 }
 
+func NewClientFromConn(conn net.Conn) *Client {
+	return &Client{
+		conn: conn,
+	}
+}
+
 func New(endpoint string, opts Options) (*Client, error) {
 	conn, err := net.Dial("tcp", endpoint)
 	if err != nil {

@@ -22,8 +22,10 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(time.Second * 1)
-		SendStuff()
+		time.Sleep(time.Second * 10)
+		if opts.IsLeader {
+			SendStuff()
+		}
 	}()
 
 	server := NewServer(opts, cache.NewCache())
