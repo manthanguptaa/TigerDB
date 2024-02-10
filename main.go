@@ -5,6 +5,7 @@ import (
 	"TigerDB/client"
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 )
@@ -21,27 +22,38 @@ func main() {
 	}
 
 	go func() {
-		time.Sleep(time.Second * 2)
-		client, err := client.New(":3000", client.Options{})
-		if err != nil {
-			log.Fatal(err)
-		}
-		for i := 0; i < 5; i++ {
-			SendCommand(client)
-			time.Sleep(time.Millisecond * 200)
-		}
-		client.Close()
-		time.Sleep(time.Millisecond * 200)
+		time.Sleep(time.Second * 1)
+		SendStuff()
 	}()
 
 	server := NewServer(opts, cache.NewCache())
 	server.Start()
 }
 
-func SendCommand(c *client.Client) {
-	_, err := c.Set(context.Background(), []byte("Manthan"), []byte("Gupta"), 0)
-	if err != nil {
-		log.Fatal(err)
+func SendStuff() {
+	for i := 0; i < 100; i++ {
+		go func(i int) {
+			client, err := client.New(":3000", client.Options{})
+			if err != nil {
+				log.Fatal(err)
+			}
+			var key = fmt.Sprintf("key_%d", i)
+			var value = fmt.Sprintf("value_%d", i)
+
+			err = client.Set(context.Background(), []byte(key), []byte(value), 0)
+			if err != nil {
+				log.Println(err)
+			}
+
+			resp, err := client.Get(context.Background(), []byte(key))
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			fmt.Println(string(resp))
+			client.Close()
+		}(i)
 	}
 
 }

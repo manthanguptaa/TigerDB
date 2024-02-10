@@ -49,8 +49,6 @@ func (s *Server) Start() error {
 func (s *Server) handleConn(conn net.Conn) {
 	defer conn.Close()
 
-	fmt.Println("connection made: ", conn.RemoteAddr())
-
 	for {
 		cmd, err := proto.ParseCommand(conn)
 		if err != nil {
@@ -60,11 +58,8 @@ func (s *Server) handleConn(conn net.Conn) {
 			log.Println("parse command error: ", err)
 			break
 		}
-		fmt.Println(cmd)
 		go s.handleCommand(conn, cmd)
 	}
-
-	fmt.Println("connection closed: ", conn.RemoteAddr())
 }
 
 func (s *Server) handleCommand(conn net.Conn, cmd any) {
@@ -72,10 +67,48 @@ func (s *Server) handleCommand(conn net.Conn, cmd any) {
 	case *proto.CommandSet:
 		s.handleSetCommand(conn, v)
 	case *proto.CommandGet:
+		s.handleGetCommand(conn, v)
 	}
 }
 
 func (s *Server) handleSetCommand(conn net.Conn, cmd *proto.CommandSet) error {
-	log.Printf("SET %s to %s", cmd.Key, cmd.Value)
-	return s.cache.Set(cmd.Key, cmd.Value, time.Duration(cmd.TTL))
+	resp := proto.ResponseSet{}
+	if err := s.cache.Set(cmd.Key, cmd.Value, time.Duration(cmd.TTL)); err != nil {
+		resp.Status = proto.StatusError
+		serialize, _ := resp.Bytes()
+		_, err := conn.Write(serialize)
+		return err
+	}
+
+	resp.Status = proto.StatusOK
+	serialize, _ := resp.Bytes()
+	_, err := conn.Write(serialize)
+	return err
+}
+
+func (s *Server) handleGetCommand(conn net.Conn, cmd *proto.CommandGet) error {
+
+	resp := proto.ResponseGet{}
+	value, err := s.cache.Get(cmd.Key)
+	if err != nil {
+		resp.Status = proto.StatusKeyNotFound
+		serialize, err := resp.Bytes()
+		if err != nil {
+			return err
+		}
+		_, err = conn.Write(serialize)
+		return err
+	}
+
+	resp.Status = proto.StatusOK
+	resp.Value = value
+	serialize, err := resp.Bytes()
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(serialize)
+	if err != nil {
+		return err
+	}
+	return nil
 }
