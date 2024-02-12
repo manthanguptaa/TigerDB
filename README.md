@@ -2,6 +2,10 @@
 
 **TigerDB** provides a horizontally scalable distributed cache, offering high performance and availability for key-value storage. It utilizes the Raft consensus algorithm for strong consistency and fault tolerance, ensuring data integrity even during node failures.
 
+
+https://github.com/manthanguptaa/TigerDB/assets/42516515/84d433ce-7dc7-4130-89ad-a436d64a6229
+
+
 **Key Features:**
 
 - **Scalability:** Effortlessly scale your cache by adding nodes to the cluster.
